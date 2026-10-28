@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Мета-теги для работы как мобильное приложение (PWA) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#C4D7A1">
+    <title>blockkid music</title>
+    
+    <!-- Подключаем стили и библиотеки -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Подключаем иконки -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Стили для скроллбара и запрет на выделение текста */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #C4D7A1;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #D7E8B3; 
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #4C662B;
+            border-radius: 10px;
+            border: 2px solid #D7E8B3;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #3d5322;
+        }
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // --- ИКОНКИ (Специальный обход для одиночного HTML-файла) ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const elRef = useRef(null);
+            useEffect(() => {
+                if (elRef.current && window.lucide) {
+                    // Генерируем иконку на лету
+                    const iconNode = window.lucide.createElement(window.lucide.icons[name]);
+                    iconNode.setAttribute('width', size);
+                    iconNode.setAttribute('height', size);
+                    iconNode.setAttribute('class', className);
+                    elRef.current.innerHTML = '';
+                    elRef.current.appendChild(iconNode);
+                }
+            }, [name, size, className]);
+            return <span ref={elRef} className="flex items-center justify-center"></span>;
+        };
+
+        const Home = (props) => <Icon name="Home" {...props} />;
+        const ListMusic = (props) => <Icon name="ListMusic" {...props} />;
+        const User = (props) => <Icon name="User" {...props} />;
+        const Trash2 = (props) => <Icon name="Trash2" {...props} />;
+        const Play = (props) => <Icon name="Play" {...props} />;
+        const Pause = (props) => <Icon name="Pause" {...props} />;
+        const Music = (props) => <Icon name="Music" {...props} />;
+        const Disc3 = (props) => <Icon name="Disc3" {...props} />;
+        const Heart = (props) => <Icon name="Heart" {...props} />;
+        const SkipBack = (props) => <Icon name="SkipBack" {...props} />;
+        const SkipForward = (props) => <Icon name="SkipForward" {...props} />;
+        const Volume2 = (props) => <Icon name="Volume2" {...props} />;
+        const VolumeX = (props) => <Icon name="VolumeX" {...props} />;
+
+        // --- СПИСОК ТРЕКОВ (Навсегда вшиты в приложение) ---
+        const initialTracks = [
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/01%20%D0%96%D0%B0%D1%80.m4a', title: '01 Жар' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20Mob%20Ties.mp3', title: 'Mob Ties' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/01%20Big%20Ben.m4a', title: '01 Big Ben' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5BA-THIS%2052%5D%20Blockkid%20%2C%20A-THIS%20-%20Nun%20Major%20(Freestyle).wav.mp3', title: 'Nun Major (Freestyle)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5BSaintHustle%5D%20%D0%9F%D1%80%D0%B5%D0%B4%D0%B5%D0%BB%20%26%20blockkid%20(prod.%20surpemebarrsten).mp3', title: 'Предел & blockkid (prod. surpemebarrsten)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20LoveWorldPrayGod.mp3', title: 'LoveWorldPrayGod' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20Moscow%20(with%20love)%20(feat%20Kisser).mp3', title: 'Moscow (with love) (feat Kisser)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20Ya%20bil%20der%E2%80%99mom%20(old%20demo).mp3', title: 'Ya bil der\'mom (old demo)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20beef%20bar%20(west%20side%20gunn%20freestyle).mp3', title: 'beef bar (west side gunn freestyle)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20justloveu.mp3', title: 'justloveu' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20rip%20x%202.mp3', title: 'rip x 2' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20rip%20x.mp3', title: 'rip x' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20stop%20n%20go.mp3', title: 'stop n go' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20thats%20how%20i%20sound.mp3', title: 'thats how i sound' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20wid%20it.mp3', title: 'wid it' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%91%D1%80%D1%83%D0%BD%D0%BE.(rest%20in%20peace).mp3', title: 'Бруно (rest in peace)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%94%D0%B5%D0%BB%D0%B0%D0%B9%20%D0%BA%D0%B0%D0%BA%20%D0%BD%D0%B0%D0%B4%D0%BE!.mp3', title: 'Делай как надо!' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%98%D0%B7%20%D0%91%D1%83%D0%BA%D0%B2%20%D0%9E%20%D0%A7%D0%B8%D1%81%D0%BB%D0%B0%D1%85%203.mp3', title: 'Из Букв О Числах 3' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%A1%D1%82%D1%80%D0%B0%D1%85%20slowed%20%2B%20reverb.mp3', title: 'Страх slowed + reverb' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%BD%D1%83%D0%B6%D0%B5%D0%BD%20%D1%8F%20%D1%81%D0%B5%D0%B9%D1%87%D0%B0%D1%81(%D1%81%D1%82%D0%B0%D1%80%D0%BE%D0%B5%20%D0%B4%D0%B5%D0%BC%D0%BE).mp3', title: 'Нужен я сейчас (старое демо)' },
+            { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bhoodchildhood%5D%20ya%20znau.mp3', title: 'ya znau' }
+        ];
+
+        // --- COMPONENTS ---
+        const HomeTab = () => (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in duration-300">
+                <div className="w-32 h-32 bg-[#CDE0AA] rounded-full flex items-center justify-center mb-6 shadow-sm">
+                    <Music size={64} className="text-[#4C662B]" />
+                </div>
+                <h2 className="text-4xl font-medium text-[#4C662B] tracking-tight mb-4">Welcome to blockkid music</h2>
+            </div>
+        );
+
+        const PlaylistTab = ({ tracks, currentTrack, isPlaying, onPlay }) => {
+            return (
+                <div className="animate-in fade-in duration-300 h-full flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-3xl font-medium text-[#4C662B]">My Playlist</h2>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-32">
+                        <div className="space-y-3">
+                            {tracks.map((track) => {
+                                const isActive = currentTrack?.id === track.id;
+                                return (
+                                    <div 
+                                        key={track.id} 
+                                        onClick={() => onPlay(track)}
+                                        className={`p-4 rounded-[24px] flex items-center gap-4 group transition-all cursor-pointer shadow-sm border-2 ${
+                                            isActive 
+                                                ? 'bg-[#4C662B] border-[#4C662B] text-[#D7E8B3]' 
+                                                : 'bg-[#C4D7A1] border-transparent text-[#4C662B] hover:bg-[#b8cc92]'
+                                        }`}
+                                    >
+                                        <button className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors shadow-sm ${
+                                            isActive ? 'bg-[#D7E8B3] text-[#4C662B]' : 'bg-[#4C662B] text-[#D7E8B3]'
+                                        }`}>
+                                            {isActive && isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
+                                        </button>
+                                        
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold truncate text-lg">{track.title}</p>
+                                            <p className={`text-sm truncate ${isActive ? 'text-[#CDE0AA]' : 'text-[#597336]'}`}>blockkid</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ProfileTab = ({ trackCount }) => (
+            <div className="animate-in fade-in duration-300 h-full flex flex-col">
+                <h2 className="text-3xl font-medium text-[#4C662B] mb-8">My Profile</h2>
+                
+                <div className="bg-[#C4D7A1] rounded-[32px] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-[#CDE0AA] rounded-full mix-blend-multiply opacity-50 blur-2xl"></div>
+                    <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-[#D7E8B3] rounded-full mix-blend-multiply opacity-50 blur-2xl"></div>
+                    
+                    <div className="w-32 h-32 md:w-48 md:h-48 bg-[#4C662B] rounded-[32px] md:rounded-[48px] flex items-center justify-center text-[#D7E8B3] text-5xl md:text-7xl font-bold shadow-lg rotate-3 hover:rotate-0 transition-transform duration-300 z-10">
+                        K
+                    </div>
+                    
+                    <div className="flex-1 text-center md:text-left z-10">
+                        <h3 className="text-4xl font-bold text-[#4C662B] mb-2 tracking-tight">keds1de</h3>
+                        <p className="text-[#597336] text-lg mb-6 font-medium">Verified User</p>
+                        
+                        <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-8">
+                            <span className="bg-[#CDE0AA] text-[#4C662B] px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                                <Heart size={16} className="mr-1" />
+                                Russian hip-hop
+                            </span>
+                            <span className="bg-[#4C662B] text-[#D7E8B3] px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                                <User size={16} className="mr-1" />
+                                blockkid fan
+                            </span>
+                        </div>
+                        
+                        <div className="flex justify-center md:justify-start gap-8 border-t border-[#4C662B]/20 pt-6">
+                            <div>
+                                <p className="text-2xl font-bold text-[#4C662B]">{trackCount}</p>
+                                <p className="text-[#597336] text-sm font-medium">Added Tracks</p>
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-[#4C662B]">172</p>
+                                <p className="text-[#597336] text-sm font-medium">Total DB</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- MAIN APP ---
+        function App() {
+            const [activeTab, setActiveTab] = useState('My Playlist');
+            const [tracks, setTracks] = useState(initialTracks);
+            
+            const [currentTrack, setCurrentTrack] = useState(null);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [volume, setVolume] = useState(0.8);
+            const [isMuted, setIsMuted] = useState(false);
+            const audioRef = useRef(null);
+
+            const tabs = [
+                { id: 'Home', icon: <Home size={22} /> },
+                { id: 'My Playlist', icon: <ListMusic size={22} /> },
+                { id: 'My Profile', icon: <User size={22} /> }
+            ];
+
+            const handlePlay = (track) => {
+                if (currentTrack?.id === track.id) {
+                    if (isPlaying) {
+                        audioRef.current.pause();
+                    } else {
+                        audioRef.current.play();
+                    }
+                    setIsPlaying(!isPlaying);
+                } else {
+                    setCurrentTrack(track);
+                    setIsPlaying(true);
+                }
+            };
+
+            const playNext = () => {
+                if (!currentTrack || tracks.length === 0) return;
+                const currentIndex = tracks.findIndex(t => t.id === currentTrack.id);
+                const nextIndex = (currentIndex + 1) % tracks.length;
+                setCurrentTrack(tracks[nextIndex]);
+                setIsPlaying(true);
+            };
+
+            const playPrev = () => {
+                if (!currentTrack || tracks.length === 0) return;
+                const currentIndex = tracks.findIndex(t => t.id === currentTrack.id);
+                const prevIndex = (currentIndex - 1 + tracks.length) % tracks.length;
+                setCurrentTrack(tracks[prevIndex]);
+                setIsPlaying(true);
+            };
+
+            const handleAudioError = (e) => {
+                console.warn("Audio failed to load. GitHub link might be broken or still processing.", e);
+                setIsPlaying(false);
+            };
+
+            useEffect(() => {
+                if (currentTrack && audioRef.current) {
+                    audioRef.current.src = currentTrack.id;
+                    audioRef.current.play().catch(e => {
+                        console.log('Autoplay blocked', e);
+                        setIsPlaying(false);
+                    });
+                }
+            }, [currentTrack]);
+
+            useEffect(() => {
+                if (audioRef.current) {
+                    audioRef.current.volume = volume;
+                    audioRef.current.muted = isMuted;
+                }
+            }, [volume, isMuted]);
+
+            return (
+                <div className="min-h-screen bg-[#C4D7A1] p-4 md:p-6 lg:p-8 font-sans selection:bg-[#4C662B] selection:text-[#E0F2B9] flex flex-col md:flex-row gap-6 relative">
+                    
+                    <audio 
+                        ref={audioRef}
+                        onEnded={playNext}
+                        onPause={() => setIsPlaying(false)}
+                        onPlay={() => setIsPlaying(true)}
+                        onError={handleAudioError}
+                    />
+
+                    <nav className="md:w-64 flex-shrink-0 flex flex-col gap-4 z-10">
+                        <div className="bg-[#D7E8B3] rounded-[32px] p-6 flex items-center gap-3 shadow-sm mb-2 justify-center md:justify-start">
+                            <div className="w-10 h-10 bg-[#4C662B] rounded-full flex items-center justify-center">
+                                <Play size={20} className="text-[#D7E8B3] ml-1" />
+                            </div>
+                            <h1 className="text-xl font-bold text-[#4C662B] tracking-tight hidden md:block">blockkid music</h1>
+                        </div>
+
+                        <div className="bg-[#D7E8B3] rounded-[32px] p-3 flex flex-row md:flex-col gap-2 shadow-sm flex-1 md:flex-none justify-around md:justify-start">
+                            {tabs.map((tab) => {
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex items-center gap-4 px-5 py-4 rounded-full font-medium transition-all duration-300 ${isActive ? 'bg-[#4C662B] text-[#D7E8B3] shadow-md' : 'bg-transparent text-[#4C662B] hover:bg-[#CDE0AA]'}`}
+                                    >
+                                        <div className={isActive ? 'text-[#D7E8B3]' : 'text-[#4C662B]'}>
+                                            {tab.icon}
+                                        </div>
+                                        <span className="hidden md:block text-base">{tab.id}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </nav>
+
+                    <main className="flex-1 bg-[#D7E8B3] rounded-[32px] shadow-sm p-6 md:p-10 h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)] overflow-hidden relative z-10">
+                        {activeTab === 'Home' && <HomeTab />}
+                        {activeTab === 'My Playlist' && (
+                            <PlaylistTab 
+                                tracks={tracks} 
+                                currentTrack={currentTrack} 
+                                isPlaying={isPlaying} 
+                                onPlay={handlePlay} 
+                            />
+                        )}
+                        {activeTab === 'My Profile' && <ProfileTab trackCount={tracks.length} />}
+                    </main>
+
+                    {/* GLOBAL MEDIA PLAYER */}
+                    {currentTrack && (
+                        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl bg-[#4C662B] rounded-full p-4 px-6 flex items-center justify-between shadow-2xl z-50 animate-in slide-in-from-bottom-10 fade-in">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                                <div className="w-12 h-12 bg-[#D7E8B3] rounded-full flex items-center justify-center shrink-0">
+                                    <Music size={24} className="text-[#4C662B]" />
+                                </div>
+                                <div className="min-w-0 pr-4">
+                                    <p className="text-[#D7E8B3] font-bold truncate">{currentTrack.title}</p>
+                                    <p className="text-[#CDE0AA] text-sm truncate">blockkid</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 shrink-0">
+                                <button onClick={playPrev} className="text-[#D7E8B3] hover:text-white transition-colors">
+                                    <SkipBack size={24} />
+                                </button>
+                                <button 
+                                    onClick={() => handlePlay(currentTrack)} 
+                                    className="w-14 h-14 bg-[#D7E8B3] text-[#4C662B] rounded-full flex items-center justify-center hover:scale-105 transition-transform"
+                                >
+                                    {isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
+                                </button>
+                                <button onClick={playNext} className="text-[#D7E8B3] hover:text-white transition-colors">
+                                    <SkipForward size={24} />
+                                </button>
+                            </div>
+                            
+                            <div className="hidden sm:flex items-center gap-3 ml-8 shrink-0 group">
+                                <button 
+                                    onClick={() => setIsMuted(!isMuted)} 
+                                    className="text-[#CDE0AA] hover:text-[#D7E8B3] transition-colors focus:outline-none"
+                                >
+                                    {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                                </button>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="1" 
+                                    step="0.01" 
+                                    value={isMuted ? 0 : volume}
+                                    onChange={(e) => {
+                                        setVolume(parseFloat(e.target.value));
+                                        if (isMuted) setIsMuted(false);
+                                    }}
+                                    className="w-24 h-2 bg-[#3d5322] rounded-full appearance-none cursor-pointer accent-[#D7E8B3] hover:accent-white transition-all opacity-80 group-hover:opacity-100"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
