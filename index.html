@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>blockkid music</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #661111; border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #881515; }
+    </style>
+</head>
+<body class="bg-[#1e0505] m-0 p-0 selection:bg-[#5c1212] selection:text-[#ffcccc] overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+        
+        // Встроенные SVG иконки для надежности работы на любых устройствах
+        const createIcon = (paths) => ({ size = 24, className = "", fill = "none" }) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            {paths}
+          </svg>
+        );
+
+        const Home = createIcon(<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />);
+        const ListMusic = createIcon(<React.Fragment><path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/></React.Fragment>);
+        const User = createIcon(<React.Fragment><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></React.Fragment>);
+        const Play = createIcon(<polygon points="5 3 19 12 5 21 5 3" />);
+        const Pause = createIcon(<React.Fragment><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></React.Fragment>);
+        const Music = createIcon(<React.Fragment><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></React.Fragment>);
+        const Disc3 = createIcon(<React.Fragment><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></React.Fragment>);
+        const Heart = createIcon(<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />);
+        const SkipBack = createIcon(<React.Fragment><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></React.Fragment>);
+        const SkipForward = createIcon(<React.Fragment><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></React.Fragment>);
+        const Volume2 = createIcon(<React.Fragment><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></React.Fragment>);
+        const VolumeX = createIcon(<React.Fragment><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></React.Fragment>);
+        const Upload = createIcon(<React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></React.Fragment>);
+        const Search = createIcon(<React.Fragment><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></React.Fragment>);
+
+        const initialTracks = [
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/01%20%D0%96%D0%B0%D1%80.m4a', title: '01 Жар', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20Mob%20Ties.mp3', title: 'Mob Ties', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/01%20Big%20Ben.m4a', title: '01 Big Ben', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Nun%20Major.mp3', title: 'Nun Major', artist: 'A-THIS 52, blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5BSaintHustle%5D%20%D0%9F%D1%80%D0%B5%D0%B4%D0%B5%D0%BB%20%26%20blockkid%20(prod.%20surpemebarrsten).mp3', title: 'Предел & blockkid', artist: 'SaintHustle' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20LoveWorldPrayGod.mp3', title: 'LoveWorldPrayGod', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20Moscow%20(with%20love)%20(feat%20Kisser).mp3', title: 'Moscow (with love) (feat Kisser)', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20Ya%20bil%20der%E2%80%99mom%20(old%20demo).mp3', title: "Ya bil der'mom (old demo)", artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/beef%20bar.mp3', title: 'beef bar', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20justloveu.mp3', title: 'justloveu', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20rip%20x%202.mp3', title: 'rip x 2', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20rip%20x.mp3', title: 'rip x', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20stop%20n%20go.mp3', title: 'stop n go', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20thats%20how%20i%20sound.mp3', title: 'thats how i sound', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20wid%20it.mp3', title: 'wid it', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%91%D1%80%D1%83%D0%BD%D0%BE.(rest%20in%20peace).mp3', title: 'Бруно (rest in peace)', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%94%D0%B5%D0%BB%D0%B0%D0%B9%20%D0%BA%D0%B0%D0%BA%20%D0%BD%D0%B0%D0%B4%D0%BE!.mp3', title: 'Делай как надо!', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%98%D0%B7%20%D0%91%D1%83%D0%BA%D0%B2%20%D0%9E%20%D0%A7%D0%B8%D1%81%D0%BB%D0%B0%D1%85%203.mp3', title: 'Из Букв О Числах 3', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%A1%D1%82%D1%80%D0%B0%D1%85%20slowed%20%2B%20reverb.mp3', title: 'Страх slowed + reverb', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bblockkid%5D%20%D0%BD%D1%83%D0%B6%D0%B5%D0%BD%20%D1%8F%20%D1%81%D0%B5%D0%B9%D1%87%D0%B0%D1%81(%D1%81%D1%82%D0%B0%D1%80%D0%BE%D0%B5%20%D0%B4%D0%B5%D0%BC%D0%BE).mp3', title: 'Нужен я сейчас (старое демо)', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%5Bhoodchildhood%5D%20ya%20znau.mp3', title: 'ya znau', artist: 'hoodchildhood' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/SS25.mp3', title: 'SS_25', artist: 'ALBLAK 52, blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%A5%D0%BE%D1%87%D1%83%20%D0%B5%D1%89%D0%B5%20%D0%B1%D0%BE%D0%BB%D1%8C%D1%88%D0%B5.mp3', title: 'ХОЧУ ЕЩЁ БОЛЬШЕ', artist: 'BANG OG feat. blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%93%D0%BE%D0%BB%D0%B5%D0%B2%D0%BE%D0%B9.mp3', title: 'Голевой', artist: 'Sarg, blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%204dastreet.mp3', title: '4dastreet', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Ballin_.mp3', title: 'Ballin_', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20Autumn.mp3', title: 'Autumn', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20Clout.mp3', title: 'Clout', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/birthday%20freestyle.mp3', title: 'birthday freestyle', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/stick%20ft%20kizi.mp3', title: 'stick ft kizi', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/blockkid%20-%20chef%20freestyle.mp3', title: 'chef freestyle', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20HAUNTED%20(Skit).mp3', title: 'HAUNTED (Skit)', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Oh%20Shit%20Freestyle_.mp3', title: 'Oh Shit Freestyle_', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Dance.mp3', title: 'Dance', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20D.R.A.M.A..mp3', title: 'D.R.A.M.A.', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20Hellabandzzz.mp3', title: 'Hellabandzzz', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20Hit%20Hit.mp3', title: 'Hit Hit', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20No%20New%20Friends.mp3', title: 'No New Friends', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20No%20Pretence.mp3', title: 'No Pretence', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Poker%20Face%20Outro.mp3', title: 'Poker Face Outro', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Silence.mp3', title: 'Silence', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Since%20I%20Was%20a%20Baby.mp3', title: 'Since I Was a Baby', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Sunrise.mp3', title: 'Sunrise', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20Vacation.mp3', title: 'Vacation', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/blockkid%20-%20SantaCloud%20(3%20Jun).mp3', title: 'SantaCloud (3 Jun)', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%92%20%D1%82%D0%B0%D0%B9%D0%BD%D0%B5.mp3', title: 'В тайне', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%92%D0%B4%D0%BE%D1%85.mp3', title: 'Вдох', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%93%D1%80%D0%BE%D0%BC%D0%BA%D0%BE.mp3', title: 'Громко', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%98%D0%B7%20%D0%91%D1%83%D0%BA%D0%B2%20%D0%9E%20%D0%A7%D0%B8%D1%81%D0%BB%D0%B0%D1%85%202.mp3', title: 'Из Букв О Числах 2', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20%D0%98%D0%B7%20%D0%B1%D1%83%D0%BA%D0%B2%20%D0%BE%20%D1%87%D0%B8%D1%81%D0%BB%D0%B0%D1%85.mp3', title: 'Из букв о числах', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20%D0%98%D0%B7-%D0%B7%D0%B0%20%D0%BC%D0%B5%D0%BD%D1%8F.mp3', title: 'Из-за меня', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%9A%D1%82%D0%BE%20Next%20Up.mp3', title: 'Кто Next Up', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%9C%D0%BE%D0%B6%D0%B5%D1%82%20%D1%82%D1%8B%20%D0%BD%D0%B5%20%D1%81%D0%BC%D0%BE%D0%B6%D0%B5%D1%88%D1%8C%20%D1%81%D0%BF%D0%B0%D1%82%D1%8C.mp3', title: 'Может ты не сможешь спать', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%9C%D0%BE%D0%B9%20%D0%94%D0%B5%D0%BD%D1%8C.mp3', title: 'Мой День', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%9E%D0%BD%D0%B8%20%D0%BD%D0%B0%D1%81%20%D1%81%D0%BB%D1%8B%D1%88%D0%B0%D1%82.mp3', title: 'Они нас слышат', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20-%20%D0%A2%D0%B2%D0%BE%D0%B9%20%D0%BB%D1%8E%D0%B1%D0%B8%D0%BC%D1%8B%D0%B9%20%D1%80%D1%8D%D0%p%D0%B5%D1%80.mp3', title: 'Твой любимый рэпер', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20%D0%9C%D0%BE%D0%BC%D0%B5%D0%BD%D1%82%D1%8B.mp3', title: 'Моменты', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20Baby%20Melo%20-%20%D0%BF%D0%B5%D1%80%D0%BA%D0%B8.mp3', title: 'перки', artist: 'Blockkid, Baby Melo' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20feat.%20DooMee%20-%20Doobk.mp3', title: 'Doobk', artist: 'Blockkid feat. DooMee' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20feat.%20Hugo%20Loud%20-%20Hype%20It%20Up.mp3', title: 'Hype It Up', artist: 'Blockkid feat. Hugo Loud' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20feat.%20Kisser%20-%20%D0%9A%D0%B0%D0%BA%20%D1%8F.mp3', title: 'Как я', artist: 'Blockkid feat. Kisser' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20feat.%20%D0%91%D1%8D%D0%BD%D0%B3%20-%20Oh%20No!.mp3', title: 'Oh No!', artist: 'Blockkid feat. Бэнг' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid%20%E2%80%94%20%D0%A4%D1%80%D0%B8%D0%BA%D0%B8.mp3', title: 'Фрики', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/NFU.mp3', title: 'NFU remix', artist: 'Blockkid, KISSER' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_%20A-This%20-%20No%20TV.mp3', title: 'No TV', artist: 'Blockkid, A-This' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_%20Icegergert%20-%20LowLife.mp3', title: 'LowLife', artist: 'Blockkid, Icegergert' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/blockkid.mp3', title: 'wav', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/rockstar.mp3', title: 'rockstar', artist: 'blockkid, fracken grach' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/hahaha.mp3', title: 'хахахаха', artist: 'blockkid, kartez' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_%20Mayot%20-%20Let%20That%20Hit.mp3', title: 'Let That Hit', artist: 'Blockkid, Mayot' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_%20MyDee%2052%20-%20So%20What_.mp3', title: 'So What_', artist: 'Blockkid, MyDee 52' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_4macrew_75884840.mp3', title: '4macrew', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Afraid_of_Alarm_79452167.mp3', title: 'Afraid of Alarm', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Always_78144342.mp3', title: 'Always', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Beluga_Freestyle_78144339.mp3', title: 'Beluga Freestyle', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Benihana_74824864.mp3', title: 'Benihana', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Blondinka_74824863.mp3', title: 'Blondinka', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_CEO_Movin_79452164.mp3', title: 'CEO Movin', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Catch_u_later_74577245.mp3', title: 'Catch u later', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Check_78144338.mp3', title: 'Check', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Commerce_79452162.mp3', title: 'Commerce', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Dashka_krjekit_72954009.mp3', title: 'Dashka krjekit', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Delay_78144334.mp3', title: 'Delay', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Dont_wanna_78144332.mp3', title: 'Dont wanna', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Downstairs_74824862.mp3', title: 'Downstairs', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Drop_Top_72954011.mp3', title: 'Drop Top', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Fobia_79452163.mp3', title: 'Fobia', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Free_Fadey_74824866.mp3', title: 'Free Fadey', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Free_Tay-K_75884851.mp3', title: 'Free Tay-K', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Groove_74824860.mp3', title: 'Groove', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Honor_roll_06_78144333.mp3', title: 'Honor roll 06', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_I_Am_Ready_75884852.mp3', title: 'I Am Ready', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_I_Love_79452165.mp3', title: 'I Love', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_KHryusha_75884846.mp3', title: 'KHryusha', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Killness_Fridays_78144343.mp3', title: 'Killness Fridays', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Kogo_net_s_nami_Outro_75884854.mp3', title: 'Kogo net s nami Outro', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Krik_75884839.mp3', title: 'Krik', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Krug_75884841.mp3', title: 'Krug', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Kuzina_74824859.mp3', title: 'Kuzina', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Make_Em_Twerk_74824865.mp3', title: 'Make Em Twerk', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Moskvad_79452157.mp3', title: 'Moskvad', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Muza_78144340.mp3', title: 'Muza', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Ne_usnu_72954018.mp3', title: 'Ne usnu', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Neck_freestyle_74577244.mp3', title: 'Neck freestyle', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Never_12_79452158.mp3', title: 'Never 12', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_No_More_79452159.mp3', title: 'No More', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Ocean_79452161.mp3', title: 'Ocean', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Pedagog_75884844.mp3', title: 'Pedagog', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Pervyjj_klass_72954017.mp3', title: 'Pervyjj klass', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Pidzhak_75884843.mp3', title: 'Pidzhak', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Put_72954012.mp3', title: 'Put', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_%E2%80%94_petya_walk_%D0%BD%D0%B0%D0%B2%D1%81%D0%B5%D0%B3%D0%B4%D0%B0_www_lightaudio_ru.mp3', title: 'petya walk навсегда', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Rover_73059277.mp3', title: 'Rover', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Rovno_mig_72954008.mp3', title: 'Rovno mig', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Seven_Hills_City_79452156.mp3', title: 'Seven Hills City', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Sistema_72954020.mp3', title: 'Sistema', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Sizzurp_74824867.mp3', title: 'Sizzurp', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Skit_78144336.mp3', title: 'Skit', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Smokers_die_younger_78144337.mp3', title: 'Smokers die younger', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Sound_Of_Space_74577240.mp3', title: 'Sound Of Space', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Star_75884847.mp3', title: 'Star', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Stax.mp3', title: 'Stax', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Stop_Drugs_79452166.mp3', title: 'Stop Drugs', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Sweet_Sixteen_75884838.mp3', title: 'Sweet Sixteen', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Thats_My_Sound_78144331.mp3', title: 'Thats My Sound', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Time_machine_freestyle_72954016.mp3', title: 'Time machine freestyle', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_TrubaSignaly_78144335.mp3', title: 'TrubaSignaly', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Ty_znaesh_chto_delat_74577242.mp3', title: 'Ty znaesh chto delat', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_U_Kno_74153064.mp3', title: 'U Kno', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_V_Mishku_74824861.mp3', title: 'V Mishku', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Vmeste_72954010.mp3', title: 'Vmeste', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-_Na_komandu.mp3', title: 'Na komandu', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/blockkid_%D0%B7%D0%B0%D0%B3%D0%B0%D0%B4%D0%B0%D0%B9_%D1%87%D1%82%D0%BE%D0%B1_%D0%BC%D1%8B_%D0%B1%D1%8B%D0%BB%D0%B8_%D0%B2%D0%BC%D0%B5%D1%81%D1%82%D0%B5.mp3', title: 'загадай чтоб мы были вместе', artist: 'blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Hi_Tech.mp3', title: 'Hi Tech', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Kikimora.mp3', title: 'Kikimora', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Kredo.mp3', title: 'Kredo', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Pims.mp3', title: 'Pims', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Stick.mp3', title: 'Stick', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Stoned_n_High.mp3', title: 'Stoned_n_High', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Wassup.mp3', title: 'Wassup', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Water.mp3', title: 'Water', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Zakrojj_svojj_rot.mp3', title: 'Zakrojj svojj rot', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Zelny.mp3', title: 'Zelny', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid-Zima.mp3', title: 'Zima', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Boom%20Bitch%20demo.m4a', title: 'Boom Bitch demo', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Den_gi%20demo.m4a', title: 'Den_gi demo', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Euthanasia.mp3', title: 'Euthanasia', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Guinness.mp3', title: 'Guinness', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/No-Molly-demo.mp3', title: 'No-Molly-demo', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/est_%20li%20v%20tebe%20ona.mp3', title: 'est_ li v tebe ona', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/grey%20october%20freestyle.mp3', title: 'grey october freestyle', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/normal%20story.mp3', title: 'normal story', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Safari.mp3', title: 'Safari', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Smokers%20Die%20Younger%202%20demo%201.mp3', title: 'Smokers Die Younger 2 demo 1', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/World%20Is%20Yours.mp3', title: 'World Is Yours', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/YO%20GOOONE.mp3', title: 'YO GOOONE', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%92%20%D0%BC%D0%B0%D0%B5%20demo.m4a', title: 'В мае demo', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%94%D1%83%D0%BC%D0%B0%D0%BB%D0%B0%20%D0%94%D1%83%D0%BC%D0%B0%D0%BB%D0%B0.mp3', title: 'Думала Думала', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%95%D1%81%D0%B5%D0%BD%D0%B8%D0%BD.mp3', title: 'Есенин', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%9F%D0%BE%D0%BD%D1%87%D0%B8%D0%BA.mp3', title: 'Пончик', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%9F%D0%BE%D1%87%D0%B5%D0%BC%D1%83%20%D1%8F%20%D0%B4%D0%B5%D0%BB%D0%B0%D1%8E%20%D1%82%D0%B0%D0%BA%20%D1%81%20%D0%BD%D0%B8%D0%BC%D0%B8.mp3', title: 'Почему я делаю так с ними', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%A1%D0%9F%D0%AD.mp3', title: 'СПЭ', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%A2%D0%B0%D0%BA%D0%BE%D0%B2%20%D0%9C%D0%B8%D1%80.mp3', title: 'Таков Мир', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/%D0%AF%D0%BC%D0%B0.mp3', title: 'Яма', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/UAINTREADY.mp3', title: 'UAINTREADY', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/A-This_Blockkid_-_G_CODE_20_77847116.mp3', title: 'G CODE 20', artist: 'Blockkid, A-This' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/AMA_AMA.mp3', title: 'AMA_AMA', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Amigo%20krinj.mp3', title: 'Amigo krinj', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Rest%20In%20Peace.mp3', title: 'Rest In Peace', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/blockkid--%D1%82%D1%80%D1%83%20%D1%89%D0%B8%D1%82_320k.mp3', title: 'тру щит_320k', artist: 'Blockkid' },
+          { id: 'https://raw.githubusercontent.com/ggogoogg/blockkid-tracks/main/Blockkid_-_Intro_75884837.mp3', title: 'Intro', artist: 'Blockkid' }
+        ];
+
+        const HomeTab = () => (
+          <div className="flex flex-col items-center justify-center h-full text-center p-4 md:p-8 animate-in fade-in duration-300 overflow-y-auto pb-24">
+            <div className="w-24 h-24 md:w-32 md:h-32 bg-[#4a0d0d] rounded-full flex items-center justify-center mb-6 shadow-sm border border-[#6b1515]">
+              <Music size={64} className="text-[#ffcccc]" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-medium text-[#ffcccc] tracking-tight mb-4">Welcome to blockkid music</h2>
+            <p className="text-[#d99b9b] text-base md:text-lg max-w-md">
+              Your custom native music hub. All tracks are streaming live from your GitHub repository!
+            </p>
+          </div>
+        );
+
+        const PlaylistTab = ({ tracks, currentTrack, isPlaying, onPlay, onFileUpload }) => {
+          const fileInputRef = useRef(null);
+          const [searchQuery, setSearchQuery] = useState('');
+
+          const filteredTracks = tracks.filter(track => 
+            track.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            track.artist.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+
+          return (
+            <div className="animate-in fade-in duration-300 h-full flex flex-col">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-4">
+                <h2 className="text-2xl md:text-3xl font-medium text-[#ffcccc] whitespace-nowrap">My Playlist ({tracks.length})</h2>
+                
+                <div className="w-full md:max-w-xs xl:max-w-md relative flex-shrink-0">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#cc8080]">
+                    <Search size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Поиск треков..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-2 md:py-3 border border-[#801a1a] rounded-full leading-5 bg-[#380b0b] text-[#ffcccc] placeholder-[#cc8080] focus:outline-none focus:ring-1 focus:ring-[#ffcccc] focus:border-[#ffcccc] sm:text-sm transition-colors shadow-sm"
+                  />
+                </div>
+
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-[#5c1212] text-[#ffcccc] hover:bg-[#731717] px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors flex items-center justify-center gap-2 shadow-sm border border-[#801a1a] w-full md:w-auto flex-shrink-0"
+                >
+                  <Upload size={20} />
+                  <span className="inline">Добавить</span>
+                </button>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="audio/*" 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={onFileUpload}
+                />
+              </div>
+              
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-32">
+                {filteredTracks.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
+                    <Disc3 size={48} className="text-[#ffcccc] mb-4 opacity-50" />
+                    <p className="text-[#ffcccc] text-lg">
+                      {searchQuery ? "По запросу ничего не найдено." : "Плейлист пуст."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredTracks.map((track, idx) => {
+                      const isActive = currentTrack?.id === track.id;
+                      
+                      return (
+                        <div 
+                          key={track.id + idx} 
+                          onClick={() => onPlay(track)}
+                          className={`p-4 rounded-[24px] flex items-center gap-4 group transition-all cursor-pointer shadow-sm border ${
+                            isActive 
+                              ? 'bg-[#5c1212] border-[#801a1a] text-[#ffcccc]' 
+                              : 'bg-[#2b0808] border-[#380b0b] text-[#ffcccc] hover:bg-[#380b0b]'
+                          }`}
+                        >
+                          <button className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors shadow-sm ${
+                            isActive ? 'bg-[#ffcccc] text-[#4a0d0d]' : 'bg-[#4a0d0d] text-[#ffcccc]'
+                          }`}>
+                            {isActive && isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
+                          </button>
+                          
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate text-lg">{track.title}</p>
+                            <p className={`text-sm truncate ${isActive ? 'text-[#ffb3b3]' : 'text-[#cc8080]'}`}>{track.artist}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // Функция для перевода транслита в нормальный русский и очистки названий
+        const translitMap = {
+          "ya bil der'mom (old demo)": "Я был дерьмом (old demo)",
+          "ya znau": "Я знаю",
+          "dashka krjekit": "Дашка крякает",
+          "ty znaesh chto delat": "Ты знаешь что делать",
+          "v mishku": "В Мишку",
+          "vmeste": "Вместе",
+          "na komandu": "На команду",
+          "zakrojj svojj rot": "Закрой свой рот",
+          "zelny": "Зеленый",
+          "zima": "Зима",
+          "den gi demo": "Деньги demo",
+          "est li v tebe ona": "Есть ли в тебе она",
+          "ne usnu": "Не усну",
+          "pervyjj klass": "Первый класс",
+          "pidzhak": "Пиджак",
+          "put": "Путь",
+          "rovno mig": "Ровно миг",
+          "khryusha": "Хрюша",
+          "kogo net s nami outro": "Кого нет с нами Outro",
+          "krik": "Крик",
+          "krug": "Круг",
+          "kuzina": "Кузина",
+          "moskvad": "Москвад",
+          "muza": "Муза",
+          "pedagog": "Педагог",
+          "sistema": "Система",
+          "blondinka": "Блондинка",
+          "trubasignaly": "Труба Сигналы",
+          "amigo krinj": "Амиго кринж",
+          "fobia": "Фобия",
+          "kikimora": "Кикимора",
+          "kredo": "Кредо"
+        };
+
+        const cleanTitle = (title) => {
+          // Сначала убираем 01, дефисы и лишние пробелы
+          let cleaned = title.replace(/^01\s*/, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+          
+          // Проверяем, есть ли такое название в нашем словаре транслита
+          const lowerCleaned = cleaned.toLowerCase();
+          return translitMap[lowerCleaned] || cleaned;
+        };
+
+        function App() {
+          const [activeTab, setActiveTab] = useState('My Playlist');
+          
+          // Применяем очистку названий ко всем стартовым трекам
+          const [tracks, setTracks] = useState(() => 
+            initialTracks.map(track => ({
+              ...track,
+              title: cleanTitle(track.title)
+            }))
+          );
+          
+          const [currentTrack, setCurrentTrack] = useState(null);
+          const [isPlaying, setIsPlaying] = useState(false);
+          const [volume, setVolume] = useState(0.8);
+          const [isMuted, setIsMuted] = useState(false);
+          
+          const audioRef = useRef(null);
+
+          const tabs = [
+            { id: 'Home', icon: <Home size={22} /> },
+            { id: 'My Playlist', icon: <ListMusic size={22} /> },
+            { id: 'My Profile', icon: <User size={22} /> }
+          ];
+
+          const handleFileUpload = (e) => {
+            if (!e.target.files) return;
+            const files = Array.from(e.target.files);
+            const newTracks = files.map(file => ({
+              id: URL.createObjectURL(file),
+              // Очищаем названия также и у новых загружаемых файлов
+              title: cleanTitle(file.name.replace(/\.[^/.]+$/, "").replace(/\[blockkid\]\s*/i, "")),
+              artist: "blockkid"
+            }));
+            setTracks(prev => [...prev, ...newTracks]);
+            e.target.value = '';
+          };
+
+          const handlePlay = (track) => {
+            if (currentTrack?.id === track.id) {
+              if (isPlaying) {
+                audioRef.current.pause();
+              } else {
+                audioRef.current.play();
+              }
+              setIsPlaying(!isPlaying);
+            } else {
+              setCurrentTrack(track);
+              setIsPlaying(true);
+            }
+          };
+
+          const playNext = () => {
+            if (!currentTrack || tracks.length === 0) return;
+            const currentIndex = tracks.findIndex(t => t.id === currentTrack.id);
+            const nextIndex = (currentIndex + 1) % tracks.length;
+            setCurrentTrack(tracks[nextIndex]);
+            setIsPlaying(true);
+          };
+
+          const playPrev = () => {
+            if (!currentTrack || tracks.length === 0) return;
+            const currentIndex = tracks.findIndex(t => t.id === currentTrack.id);
+            const prevIndex = (currentIndex - 1 + tracks.length) % tracks.length;
+            setCurrentTrack(tracks[prevIndex]);
+            setIsPlaying(true);
+          };
+
+          useEffect(() => {
+            if (currentTrack && audioRef.current) {
+              audioRef.current.src = currentTrack.id;
+              audioRef.current.play().catch(e => {
+                console.warn('Playback failed', e);
+                setIsPlaying(false);
+              });
+            }
+          }, [currentTrack]);
+
+          useEffect(() => {
+            if (audioRef.current) {
+              audioRef.current.volume = volume;
+              audioRef.current.muted = isMuted;
+            }
+          }, [volume, isMuted]);
+
+          return (
+            <div className="h-[100dvh] bg-[#1e0505] p-3 md:p-6 lg:p-8 font-sans flex flex-col md:flex-row gap-3 md:gap-6 relative overflow-hidden">
+              <audio 
+                ref={audioRef}
+                onEnded={playNext}
+                onPause={() => setIsPlaying(false)}
+                onPlay={() => setIsPlaying(true)}
+              />
+
+              <nav className="md:w-64 flex-shrink-0 flex flex-col gap-2 md:gap-4 z-10 pt-1 md:pt-0">
+                <div className="bg-[#2b0808] border border-[#380b0b] rounded-[24px] md:rounded-[32px] p-4 md:p-6 flex items-center gap-3 shadow-sm justify-center md:justify-start">
+                  <div className="w-10 h-10 bg-[#5c1212] rounded-full flex items-center justify-center shrink-0">
+                    <Play size={20} className="text-[#ffcccc] ml-1" fill="currentColor" />
+                  </div>
+                  <h1 className="text-lg md:text-xl font-bold text-[#ffcccc] tracking-tight hidden md:block">blockkid music</h1>
+                </div>
+
+                <div className="bg-[#2b0808] border border-[#380b0b] rounded-[24px] md:rounded-[32px] p-2 md:p-3 flex flex-row md:flex-col gap-1 md:gap-2 shadow-sm flex-shrink-0 justify-around md:justify-start">
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`
+                          flex items-center gap-2 md:gap-4 px-4 md:px-5 py-3 md:py-4 rounded-full font-medium transition-all duration-300 flex-1 md:flex-none justify-center md:justify-start
+                          ${isActive ? 'bg-[#5c1212] text-[#ffcccc] shadow-md border border-[#801a1a]' : 'bg-transparent text-[#cc8080] hover:bg-[#380b0b] hover:text-[#ffcccc]'}
+                        `}
+                      >
+                        {tab.icon}
+                        <span className="hidden md:block text-base">{tab.id}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </nav>
+
+              <main className="flex-1 min-h-0 bg-[#2b0808] border border-[#380b0b] rounded-[24px] md:rounded-[32px] shadow-sm p-4 md:p-10 relative z-10">
+                {activeTab === 'Home' && <HomeTab />}
+                {activeTab === 'My Playlist' && (
+                  <PlaylistTab 
+                    tracks={tracks} 
+                    currentTrack={currentTrack} 
+                    isPlaying={isPlaying} 
+                    onPlay={handlePlay} 
+                    onFileUpload={handleFileUpload}
+                  />
+                )}
+                {activeTab === 'My Profile' && <ProfileTab trackCount={tracks.length} />}
+              </main>
+
+              {currentTrack && (
+                <div className="fixed bottom-3 md:bottom-8 left-3 right-3 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-11/12 max-w-2xl bg-[#4a0d0d] border border-[#6b1515] rounded-[28px] md:rounded-full p-3 md:p-4 px-4 md:px-6 flex items-center justify-between shadow-2xl z-50">
+                  <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-[#5c1212] rounded-full flex items-center justify-center shrink-0">
+                      <Music size={20} className="text-[#ffcccc]" />
+                    </div>
+                    <div className="min-w-0 pr-2 md:pr-4">
+                      <p className="text-[#ffcccc] font-bold truncate text-sm md:text-base">{currentTrack.title}</p>
+                      <p className="text-[#cc8080] text-xs md:text-sm truncate">{currentTrack.artist}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 md:gap-4 shrink-0">
+                    <button onClick={playPrev} className="text-[#cc8080] hover:text-white transition-colors p-1 md:p-0 hidden sm:block">
+                      <SkipBack size={20} fill="currentColor" />
+                    </button>
+                    <button 
+                      onClick={() => handlePlay(currentTrack)} 
+                      className="w-12 h-12 md:w-14 md:h-14 bg-[#ffcccc] text-[#4a0d0d] rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-md shrink-0"
+                    >
+                      {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
+                    </button>
+                    <button onClick={playNext} className="text-[#cc8080] hover:text-white transition-colors p-1 md:p-0">
+                      <SkipForward size={20} fill="currentColor" />
+                    </button>
+                  </div>
+                  
+                  <div className="hidden sm:flex items-center gap-3 ml-6 shrink-0">
+                    <button onClick={() => setIsMuted(!isMuted)} className="text-[#cc8080] hover:text-[#ffcccc] transition-colors">
+                      {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1" 
+                      step="0.01" 
+                      value={isMuted ? 0 : volume}
+                      onChange={(e) => {
+                        setVolume(parseFloat(e.target.value));
+                        if (isMuted) setIsMuted(false);
+                      }}
+                      className="w-24 h-2 bg-[#380b0b] rounded-full appearance-none cursor-pointer accent-[#ffcccc]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
